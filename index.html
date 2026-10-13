@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Possessive Galaxy Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark;--bg:#070a24;--ink:#fff;--card:rgba(25,30,80,.72);--ok:#22c55e;--bad:#ef4444;--gold:#ffd166}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:'Fredoka','Trebuchet MS',system-ui,sans-serif;overflow-x:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+#app{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:16px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+h1{font-size:clamp(34px,7vw,64px);margin:0;line-height:1.05;background:linear-gradient(90deg,#ffd166,#ff7eb6,#7ee8fa);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{margin:0;font-size:clamp(24px,4vw,36px)}p{margin:0;font-size:clamp(17px,2.4vw,22px)}
+.card{background:var(--card);border:2px solid rgba(255,255,255,.18);border-radius:24px;padding:20px;width:100%;backdrop-filter:blur(6px);box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.btn{font:inherit;font-weight:700;font-size:clamp(20px,3vw,26px);min-height:60px;padding:10px 28px;border:0;border-radius:40px;color:#1a1033;background:linear-gradient(180deg,#ffe08a,#ffb703);box-shadow:0 6px 0 #b37a00,0 10px 24px rgba(0,0,0,.4);cursor:pointer;touch-action:manipulation}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #b37a00}
+.opts{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.opt{font:inherit;font-weight:600;font-size:clamp(22px,3.4vw,30px);min-width:120px;min-height:64px;padding:8px 22px;border-radius:18px;border:2px solid #7ee8fa;background:rgba(126,232,250,.12);color:#fff;cursor:pointer;touch-action:manipulation}
+.opt:active{transform:scale(.95)}.opt:disabled{opacity:.55}
+.opt.ok{background:var(--ok);border-color:#bbf7d0}.opt.bad{background:var(--bad);border-color:#fecaca}
+.sent{font-size:clamp(26px,4.6vw,44px);font-weight:600;line-height:1.3}
+.blank{display:inline-block;min-width:90px;border-bottom:4px dashed var(--gold);color:var(--gold)}
+.blank.ok{color:#86efac;border-color:#86efac}.blank.bad{color:#fca5a5;border-color:#fca5a5}
+.emo{font-size:clamp(60px,10vw,96px);line-height:1;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.fb{border-radius:20px;padding:14px 18px;font-size:clamp(18px,2.6vw,24px);width:100%;animation:pop .3s}
+.fb.ok{background:rgba(34,197,94,.25);border:3px solid var(--ok);color:#bbf7d0}
+.fb.bad{background:rgba(239,68,68,.25);border:3px solid var(--bad);color:#fecaca}
+@keyframes pop{from{transform:scale(.9);opacity:0}}
+.hud{display:flex;justify-content:space-between;width:100%;font-weight:700;font-size:20px}
+.track{position:relative;width:100%;height:56px;margin:4px 0}
+.track:before{content:"";position:absolute;left:4%;right:4%;top:26px;height:4px;background:repeating-linear-gradient(90deg,#fff6 0 10px,transparent 10px 20px)}
+.node{position:absolute;top:8px;font-size:30px;transform:translateX(-50%);filter:grayscale(1) opacity(.5)}.node.on{filter:none}
+.rocket{position:absolute;top:0;font-size:34px;transform:translateX(-50%) rotate(90deg);transition:left .8s cubic-bezier(.4,1.4,.5,1)}
+.planet{width:clamp(140px,26vw,220px);aspect-ratio:1;border-radius:50%;position:relative;animation:spin 14s linear infinite;box-shadow:inset -28px -22px 50px rgba(0,0,0,.65),inset 12px 10px 30px rgba(255,255,255,.35),0 0 60px var(--g)}
+.planet:after{content:"";position:absolute;inset:-14% -34%;border-radius:50%;border:10px solid rgba(255,255,255,.35);transform:rotateX(72deg) rotateZ(-14deg)}
+.planet.noring:after{display:none}
+@keyframes spin{to{background-position:300px 0}}
+.rocketbig{font-size:80px;display:inline-block;transform:rotate(-45deg);animation:fly 2.2s ease-in-out infinite}
+@keyframes fly{50%{transform:rotate(-45deg) translate(10px,-14px)}}
+.stars{font-size:56px;letter-spacing:6px}
+.row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+.mic{font-size:20px;min-height:52px}
+.small{font-size:16px;opacity:.85}
+</style></head><body>
+<canvas id="cv"></canvas><div id="app"></div>
+<script>
+// ===== Starfield (3D depth) =====
+const cv=document.getElementById('cv'),cx=cv.getContext('2d');let W,H,st=[];
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight}rs();addEventListener('resize',rs);
+for(let i=0;i<220;i++)st.push({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()});
+(function loop(){cx.fillStyle='#070a24';cx.fillRect(0,0,W,H);
+ const g=cx.createRadialGradient(W*.7,H*.2,0,W*.7,H*.2,W*.7);g.addColorStop(0,'rgba(120,60,200,.35)');g.addColorStop(1,'transparent');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+ for(const s of st){s.z-=.0025;if(s.z<=.02){s.z=1;s.x=Math.random()*2-1;s.y=Math.random()*2-1}
+  const k=.3/s.z,x=W/2+s.x*k*W/2,y=H/2+s.y*k*H/2;cx.fillStyle=`rgba(255,255,255,${1-s.z})`;cx.beginPath();cx.arc(x,y,(1-s.z)*2.4,0,7);cx.fill()}
+ requestAnimationFrame(loop)})();
+// ===== Sound =====
+let ac;function beep(f,d=.15,t='sine'){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.value=.12;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+const good=()=>{beep(660);setTimeout(()=>beep(880,.2),120)},bad=()=>beep(220,.3,'triangle');
+function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+// ===== Data =====
+const ALL=['my','your','his','her','its','our','their'];
+const STAGES=[
+{name:'Planet Fill-in',emoji:'🪐',g:'#ff9a3c',c:'radial-gradient(circle at 35% 30%,#ffd08a,#e8590c 60%,#7a2a05)',intro:'Read the clue, then tap the correct word from the Word Bank to fill the gap!',qs:[
+{e:'🙋',s:'I have a cat. ___ cat is small.',a:'my',w:'"I" → my. It shows the cat belongs to me!'},
+{e:'🧑‍🤝‍🧑',s:'You have a book. ___ book is new.',a:'your',w:'"You" → your. The book belongs to you!'},
+{e:'👦',s:'Tom has a ball. ___ ball is blue.',a:'his',w:'Tom is a boy, so we use his.'},
+{e:'👧',s:'Anna has a pen. ___ pen is pink.',a:'her',w:'Anna is a girl, so we use her.'},
+{e:'🐶',s:'The dog has a bone. ___ bone is big.',a:'its',w:'For animals and things we use its.'}]},
+{name:'Sentence Voyager',emoji:'🛰️',g:'#2dd4bf',c:'radial-gradient(circle at 35% 30%,#a7f3d0,#0d9488 60%,#064e4b)',ring:1,intro:'Choose the right Possessive Adjective to complete each sentence!',qs:[
+{e:'🏠',s:'We have a house. ___ house is old.',a:'our',o:['my','our','their','its'],w:'"We" → our. The house belongs to us!'},
+{e:'🚗',s:'Mr. and Mrs. Lee have a car. ___ car is fast.',a:'their',o:['his','our','their','her'],w:'Mr. and Mrs. Lee = they → their.'},
+{e:'✏️',s:'Is this ___ pencil, Sara? Yes, it is mine.',a:'your',o:['my','her','your','our'],w:'We are talking to Sara ("you"), so your.'},
+{e:'👩‍🏫',s:'Ms. Kim loves ___ job. She is a teacher.',a:'her',o:['his','her','their','its'],w:'Ms. Kim is a woman → her.'},
+{e:'⚽',s:'Max plays football with ___ friends.',a:'his',o:['her','my','his','our'],w:'Max is a boy → his.'}]},
+{name:'Pronunciation Probe',emoji:'🔮',g:'#a78bfa',c:'radial-gradient(circle at 35% 30%,#ddd6fe,#7c3aed 60%,#2e1065)',intro:'Tap 🔊 to listen, then pick the missing word. Or tap 🎤 and say the whole sentence!',qs:[
+{e:'📓',s:'This is ___ notebook.',say:'This is my notebook.',a:'my',o:['my','your','his'],w:'You heard "my". It means the notebook is mine!'},
+{e:'🐕',s:'She loves ___ dog.',say:'She loves her dog.',a:'her',o:['his','her','their'],w:'"She" → her. Listen for the soft "her" sound.'},
+{e:'🧹',s:'They clean ___ room.',say:'They clean their room.',a:'their',o:['our','their','its'],w:'"They" → their. It sounds like "thair".'},
+{e:'🏫',s:'We love ___ school.',say:'We love our school.',a:'our',o:['my','our','your'],w:'"We" → our. It sounds like "ow-er".'},
+{e:'🤖',s:'The robot has ___ own light.',say:'The robot has its own light.',a:'its',o:['his','its','her'],w:'A robot is a thing → its.'}]}];
+const RANKS=[[14,'Galaxy Commander 👑'],[11,'Star Captain 🌟'],[8,'Space Pilot 🚀'],[0,'Rookie Astronaut 🛸']];
+const CHEER=['Great job, Captain! 🌟','Out of this world! 🚀','Stellar answer! ✨','You are a star! ⭐','Awesome flying! 🛸'];
+const TRY=["Almost! Don't give up, astronaut! 💪","Oops! Even pilots make mistakes. Keep going! 🚀","So close! You'll get the next one! 🌠"];
+const $=document.getElementById('app');let stg=0,qi=0,score=0,done=false;
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+// ===== Screens =====
+function home(){stg=qi=score=0;$.innerHTML=`<div class="rocketbig">🚀</div><h1>Possessive<br>Galaxy Quest</h1>
+<p>Fly through 3 planets and reach <b style="color:var(--gold)">The Grand Galaxy</b>!</p>
+<div class="card"><div class="row" style="gap:28px"><span>🪐 Planet Fill-in</span><span>🛰️ Sentence Voyager</span><span>🔮 Pronunciation Probe</span></div>
+<p class="small" style="margin-top:10px">15 questions • 1 point each • about 30 minutes</p></div>
+<button class="btn" onclick="intro()">🚀 Start Mission</button>`}
+function intro(){const S=STAGES[stg];$.innerHTML=`<p class="small">Planet ${stg+1} of 3</p><div class="planet ${S.ring?'':'noring'}" style="--g:${S.g};background:${S.c};background-size:300px 100%"></div>
+<h2>Welcome to ${S.name}!</h2><div class="card"><p>${S.intro}</p>${stg==0?'<p class="small" style="margin-top:10px">Remember: I→my • you→your • he→his • she→her • it→its • we→our • they→their</p>':''}</div>
+<button class="btn" onclick="qi=0;ques()">Let's go! ✨</button>`}
+function hud(){const pos=(stg+qi/5)/3*92+4;let n='';[...STAGES.map(s=>s.emoji),'🌌'].forEach((e,i)=>n+=`<span class="node ${i<=stg?'on':''}" style="left:${4+i*30.67}%">${e}</span>`);
+return `<div class="hud"><span>${STAGES[stg].name}</span><span>Q ${qi+1}/5</span><span>⭐ ${score}</span></div><div class="track">${n}<span class="rocket" style="left:${pos}%">🚀</span></div>`}
+function ques(){done=false;const S=STAGES[stg],q=S.qs[qi],opts=q.o||ALL;
+ const sent=q.s.replace('___','<span class="blank" id="bl">&nbsp;&nbsp;&nbsp;</span>');
+ const mic=(window.SpeechRecognition||window.webkitSpeechRecognition)&&stg==2;
+ $.innerHTML=hud()+`<div class="card"><div class="emo">${q.e}</div><div class="sent" style="margin:10px 0">${sent}</div>
+ ${stg==2?`<div class="row" style="margin-bottom:12px"><button class="btn mic" onclick="say(STAGES[2].qs[${qi}].say)">🔊 Listen</button>${mic?'<button class="btn mic" onclick="listen()">🎤 Say it</button>':''}</div>`:''}
+ ${stg==0?'<p class="small" style="margin-bottom:8px">📦 Word Bank</p>':''}
+ <div class="opts">${opts.map(o=>`<button class="opt" onclick="ans('${o}',this)">${o}</button>`).join('')}</div></div><div id="fb"></div>`;
+ if(stg==2)setTimeout(()=>say(q.say),500)}
+function ans(w,btn){if(done)return;done=true;const q=STAGES[stg].qs[qi],ok=w==q.a,bl=document.getElementById('bl');
+ bl.textContent=q.a;bl.className='blank '+(ok?'ok':'bad');if(btn)btn.classList.add(ok?'ok':'bad');
+ document.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(b.textContent==q.a)b.classList.add('ok')});
+ if(ok){score++;good()}else bad();
+ const last=qi==4&&stg==2;
+ document.getElementById('fb').innerHTML=`<div class="fb ${ok?'ok':'bad'}"><b>${ok?'✅ Correct! '+pick(CHEER):'❌ The answer is "'+q.a+'". '+pick(TRY)}</b><br>💡 ${q.w}</div>
+ <button class="btn" style="margin-top:14px" onclick="next()">${last?'See my results 🌌':qi==4?'Fly to next planet 🚀':'Next ➜'}</button>`;
+ document.getElementById('fb').scrollIntoView({behavior:'smooth',block:'end'})}
+function next(){if(qi<4){qi++;ques()}else if(stg<2){stg++;travel()}else end()}
+function travel(){$.innerHTML=hud()+`<div class="rocketbig" style="font-size:110px">🚀</div><h2>Warp speed! 💨</h2><p>Score so far: ⭐ ${score}</p>`;setTimeout(intro,1800)}
+function end(){const r=RANKS.find(r=>score>=r[0])[1],s=score>=12?3:score>=8?2:1;
+ $.innerHTML=`<div class="planet" style="--g:#7ee8fa;background:radial-gradient(circle at 35% 30%,#fff,#ff7eb6 40%,#5b21b6 80%);background-size:300px 100%"></div>
+ <h1>The Grand Galaxy!</h1><div class="stars">${'⭐'.repeat(s)}${'☆'.repeat(3-s)}</div>
+ <div class="card"><h2>${score} / 15 points</h2><p style="margin-top:8px">Your rank: <b style="color:var(--gold)">${r}</b></p>
+ <p class="small" style="margin-top:10px">${score>=12?'Amazing! You really know your possessive adjectives!':score>=8?'Great work! Practice a little more and you will be a Commander!':'Good start, astronaut! Try again to collect more stars!'}</p></div>
+ <button class="btn" onclick="home()">🔄 Play Again</button>`;good();setTimeout(()=>beep(1040,.3),300)}
+function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR||done)return;const r=new SR();r.lang='en-US';
+ r.onresult=e=>{const t=e.results[0][0].transcript.toLowerCase(),q=STAGES[2].qs[qi];ans(new RegExp('\\b'+q.a+'\\b').test(t)?q.a:'?',null)};r.onerror=()=>{};r.start()}
+home();
+</script></body></html>
