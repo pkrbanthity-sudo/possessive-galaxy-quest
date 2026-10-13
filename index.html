@@ -58,8 +58,18 @@ body.warn:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:5;
 @keyframes al{from{transform:scale(1) rotate(-6deg)}to{transform:scale(1.2) rotate(6deg)}}
 .stars{font-size:52px;letter-spacing:6px}.row{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
 .mic{font-size:20px;min-height:52px}.small{font-size:16px;opacity:.85}
+.girl{position:relative;width:130px;height:190px}.girl.gone{opacity:.25;filter:blur(2px)}.girl i{position:absolute;display:block}
+.cb{left:20px;top:56px;width:90px;height:84px;background:#4a2a12;border:6px solid #7a4a22;border-bottom:0;border-radius:10px 10px 0 0}
+.cl{top:140px;width:9px;height:46px;background:#5a3418;border-radius:2px}.cl.l1{left:16px}.cl.l2{right:16px}
+.dr{left:36px;top:56px;width:58px;height:76px;background:linear-gradient(#e0567a,#9c2848);clip-path:polygon(24% 0,76% 0,100% 100%,0 100%)}
+.cs{left:10px;top:128px;width:110px;height:16px;background:linear-gradient(#9a6030,#6b3f1d);border-radius:5px;box-shadow:0 4px 6px rgba(0,0,0,.5)}
+.lg{top:140px;width:12px;height:34px;background:#ffd9b3;border-radius:6px;border-bottom:8px solid #3a2a2a}.lg.l1{left:46px}.lg.l2{right:46px}
+.hr{left:30px;top:-4px;width:70px;height:30px;background:#3b1e0f;border-radius:35px 35px 4px 4px;z-index:2}
+.pt{top:16px;width:18px;height:40px;background:#3b1e0f;border-radius:50%}.pt.a{left:16px}.pt.b{right:16px}
+.gf{position:absolute;left:30px;top:6px;width:70px;font-size:58px;line-height:62px;text-align:center;z-index:1}
+#mu{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;z-index:10;font-size:24px;width:48px;height:48px;border-radius:50%;border:2px solid #7a1f1f;background:#200808;color:#fff}
 </style></head><body>
-<canvas id="cv"></canvas><div id="app"></div>
+<button id="mu" onclick="tog()" aria-label="sound">🔊</button><canvas id="cv"></canvas><div id="app"></div>
 <script>
 // ===== Haunted background =====
 const cv=document.getElementById('cv'),cx=cv.getContext('2d');let cw,chh;
@@ -73,10 +83,20 @@ const em=Array.from({length:70},()=>({x:Math.random(),y:Math.random(),s:Math.ran
  if(Math.random()<.003)fls=1;if(fls>0){cx.fillStyle=`rgba(255,255,255,${fls*.22})`;cx.fillRect(0,0,cw,chh);fls-=.08}
  requestAnimationFrame(loop)})(0);
 // ===== Sound =====
-let ac,sir;function A(){ac=ac||new (window.AudioContext||window.webkitAudioContext)();return ac}
-function beep(f,d=.15,ty='sine',v=.12){try{const a=A(),o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
-function siren(){try{const a=A(),o=a.createOscillator(),g=a.createGain();o.type='sawtooth';o.frequency.setValueAtTime(500,a.currentTime);o.frequency.linearRampToValueAtTime(950,a.currentTime+.35);o.frequency.linearRampToValueAtTime(500,a.currentTime+.7);g.gain.value=.09;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.7)}catch(e){}}
-const good=()=>{beep(660);setTimeout(()=>beep(880,.2),120)},bad=()=>{beep(180,.35,'sawtooth',.1)},dead=()=>{[300,240,180,120].forEach((f,i)=>setTimeout(()=>beep(f,.4,'triangle'),i*250))};
+let ac,sir,MUTE=false,amb=null;function A(){ac=ac||new (window.AudioContext||window.webkitAudioContext)();return ac}
+function beep(f,d=.15,ty='sine',v=.12){if(MUTE)return;try{const a=A(),o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.value=f;g.gain.value=v;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+function siren(){if(MUTE)return;try{const a=A(),o=a.createOscillator(),g=a.createGain();o.type='sawtooth';o.frequency.setValueAtTime(500,a.currentTime);o.frequency.linearRampToValueAtTime(950,a.currentTime+.35);o.frequency.linearRampToValueAtTime(500,a.currentTime+.7);g.gain.value=.09;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+.7)}catch(e){}}
+const good=()=>{beep(660);setTimeout(()=>beep(880,.2),120)},bad=()=>sweep(1100,200,.5,'sawtooth',.1),dead=()=>{[300,240,180,120].forEach((f,i)=>setTimeout(()=>beep(f,.4,'triangle'),i*250))};
+function sweep(f1,f2,d,ty,v){if(MUTE)return;try{const a=A(),o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.setValueAtTime(f1,a.currentTime);o.frequency.exponentialRampToValueAtTime(f2,a.currentTime+d);g.gain.setValueAtTime(v,a.currentTime);g.gain.linearRampToValueAtTime(0,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+function thump(){beep(60,.12,'sine',.3);setTimeout(()=>beep(50,.15,'sine',.25),180)}
+function startAmb(){if(amb)return;try{const a=A(),m=a.createGain();m.gain.value=MUTE?0:.5;m.connect(a.destination);const f=a.createBiquadFilter();f.type='lowpass';f.frequency.value=220;f.connect(m);
+ [55,57.5,82].forEach((fr,i)=>{const o=a.createOscillator(),g=a.createGain();o.type=i==2?'sine':'sawtooth';o.frequency.value=fr;g.gain.value=i==2?.05:.035;o.connect(g);g.connect(f);o.start()});
+ const l=a.createOscillator(),lg=a.createGain();l.frequency.value=.15;lg.gain.value=120;l.connect(lg);lg.connect(f.frequency);l.start();amb={m};setInterval(scare,5500)}catch(e){}}
+function scare(){if(MUTE||!ac)return;try{const a=ac,k=Math.floor(Math.random()*4),t=a.currentTime,g=a.createGain();g.connect(a.destination);let s;
+ if(k==0){s=a.createBufferSource();const b=a.createBuffer(1,a.sampleRate*2,a.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;s.buffer=b;const bp=a.createBiquadFilter();bp.type='bandpass';bp.Q.value=4;bp.frequency.setValueAtTime(1500,t);bp.frequency.linearRampToValueAtTime(2600,t+1.2);s.connect(bp);bp.connect(g);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.18,t+.5);g.gain.linearRampToValueAtTime(0,t+1.3)}
+ else{const P=[0,[200,80,'sawtooth',.06],[1400,1900,'sine',.05],[48,40,'sine',.3]][k];s=a.createOscillator();s.type=P[2];s.frequency.setValueAtTime(P[0],t);s.frequency.linearRampToValueAtTime(P[1],t+.9);s.connect(g);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(P[3],t+.2);g.gain.linearRampToValueAtTime(0,t+1)}
+ s.start(t);s.stop(t+1.4)}catch(e){}}
+function tog(){MUTE=!MUTE;g$('mu').textContent=MUTE?'🔇':'🔊';if(amb)amb.m.gain.value=MUTE?0:.5;if(MUTE)try{speechSynthesis.cancel()}catch(e){}}
 let VO=null;function pv(){const v=speechSynthesis.getVoices().filter(x=>/^en[-_]US$/i.test(x.lang));VO=v.find(x=>/Samantha|Google US English|Aria|Jenny|Zira|Alex|Natural/i.test(x.name))||v[0]||null}
 try{pv();speechSynthesis.onvoiceschanged=pv}catch(e){}
 function say(t){try{speechSynthesis.cancel();pv();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(VO)u.voice=VO;u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
@@ -118,28 +138,28 @@ const STAGES=[
 {e:'🧺',s:'Anna and Ben bring ___ lunch to the park.',a:'their',say:'Anna and Ben bring their lunch to the park.',o:['her','our','their','its'],w:'Anna and Ben = they → their.'}]}];
 
 const RANKS=[[27,'Legendary Ghost Hunter 👑'],[22,'Brave Ghost Hunter 🌟'],[16,'Spooky Explorer 🔦'],[0,'Little Pumpkin 🎃']];
-const CHEER=['Great job, hunter! 🌟','Boo is smiling! 👻','Spooktacular! 🎃','You are a star! ⭐','Brilliant! 🔦'];
+const CHEER=['Great job, hunter! 🌟','Mimi is smiling! 👻','Spooktacular! 🎃','You are a star! ⭐','Brilliant! 🔦'];
 const TRY=["Don't give up, hunter! 💪","Oops! Brave hunters keep trying! 🔦","So close! You can do the next one! 🌠"];
 const $=document.getElementById('app'),g$=id=>document.getElementById(id);
 let stg,qi,score,W,D,done,CAP=false,tm,dl,alarm;
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 function L(w,c){return c?w[0].toUpperCase()+w.slice(1):w}
-// ===== Boo the ghost (3D) =====
-function boo(d,f){const fc=['😄','🙂','🙂','😟','😨','😱'];let ch='';for(let i=0;i<d;i++)ch+=`<i class="chain" style="top:${18+i*15}%"></i>`;
- return `<div class="sway"><div class="b3d"><div class="bw" style="transform:scaleX(${1-d*.04})"><div class="boo ${f||''}"><span class="eyes">${f=='gone'?'💨':fc[Math.min(d,5)]}</span></div>${ch}</div></div></div>`}
+// ===== Mimi the ghost (3D) =====
+function boo(d,f){const fc=['😄','🙂','🙂','😟','😨','😱'];let ch='';for(let i=0;i<d;i++)ch+=`<i class="chain" style="top:${42+i*23}px"></i>`;
+ return `<div class="sway"><div class="b3d"><div class="bw" style="transform:scaleX(${1-d*.03})"><div class="girl ${f||''}"><i class="cb"></i><i class="cl l1"></i><i class="cl l2"></i><i class="dr"></i><i class="cs"></i><i class="lg l1"></i><i class="lg l2"></i><i class="pt a"></i><i class="pt b"></i><span class="gf">${f=='gone'?'💨':fc[Math.min(d,5)]}</span><i class="hr"></i></div>${ch}</div></div></div>`}
 function side(){let p='';for(let i=0;i<5;i++)p+=i<W?'💀':'🕯️';
  return `<div class="cage">${boo(D)}</div><div class="pips">${p}<small>Mistakes: ${Math.min(W,5)}/5 • Chains: ${D}</small></div>`}
 // ===== Timer =====
 function clearT(){clearInterval(tm);clearInterval(sir);document.body.classList.remove('warn');const a=g$('al');if(a)a.remove()}
 function startT(){dl=Date.now()+10000;alarm=false;tm=setInterval(()=>{const r=Math.max(0,dl-Date.now())/1000;g$('tb').style.width=r*10+'%';g$('tn').textContent=Math.ceil(r);
- if(r<=4&&r>0&&!alarm){alarm=true;document.body.classList.add('warn');const a=document.createElement('div');a.id='al';a.innerHTML='<span>🚨</span><b>HURRY!</b>';document.body.appendChild(a);siren();sir=setInterval(siren,700)}
+ if(r<=4&&r>0&&!alarm){alarm=true;document.body.classList.add('warn');const a=document.createElement('div');a.id='al';a.innerHTML='<span>🚨</span><b>HURRY!</b>';document.body.appendChild(a);siren();thump();sir=setInterval(()=>{siren();thump()},700)}
  if(r<=0){ans('')}},100)}
 // ===== Screens =====
 function home(){clearT();stg=qi=score=W=0;D=3;$.innerHTML=`<h1>Possessive Galaxy Quest</h1><p style="font-family:Creepster;font-size:30px;color:var(--gold)">Haunted Edition 🎃</p>
 <div class="cage">${boo(3)}</div>
-<div class="card"><p>👻 <b>Boo</b> is trapped in chains! Answer each question in <b>10 seconds</b>.</p>
-<p class="small" style="margin-top:8px">✅ Right answer = a chain breaks &nbsp; ❌ Wrong answer = chains get tighter<br>💀 More than 5 mistakes and Boo fades away!</p></div>
-<button class="btn" onclick="A();intro()">🔦 Start Mission</button>`}
+<div class="card"><p>👻 <b>Mimi</b> is trapped in the haunted cage! Answer each question in <b>10 seconds</b>.</p>
+<p class="small" style="margin-top:8px">✅ Right answer = a chain breaks &nbsp; ❌ Wrong answer = chains get tighter<br>💀 More than 5 mistakes and the mist takes Mimi away!</p></div>
+<button class="btn" onclick="A();startAmb();intro()">🔦 Start Mission</button>`}
 function intro(){clearT();const S=STAGES[stg];$.innerHTML=`<p class="small">Room ${stg+1} of 3 • Mistakes ${W}/5</p><div class="planet ${S.ring?'':'noring'}" style="--g:${S.g};background:${S.c}"></div>
 <h2>Welcome to ${S.name}!</h2><div class="card"><p>${S.intro}</p><p class="small" style="margin-top:8px">⏱️ You have 10 seconds for each question.</p>${stg==0?'<p class="small" style="margin-top:8px">Remember: I→my • you→your • he→his • she→her • it→its • we→our • they→their</p>':''}</div>
 <button class="btn" onclick="qi=0;ques()">Let's go! 🔦</button>`}
@@ -164,9 +184,9 @@ function ans(w,btn){if(done)return;done=true;clearT();const q=STAGES[stg].qs[qi]
  g$('fb').scrollIntoView({behavior:'smooth',block:'end'})}
 function next(){if(qi<9){qi++;ques()}else if(stg<2){stg++;travel()}else end()}
 function travel(){clearT();$.innerHTML=hud()+`<div class="cage">${boo(D)}</div><h2>The door creaks open... 🚪</h2><p>Score so far: ⭐ ${score}</p>`;setTimeout(intro,1800)}
-function over(){clearT();dead();$.innerHTML=`<div class="cage">${boo(5,'gone')}</div><h1>Game Over</h1><div class="card"><p>The candle blew out... Boo faded away. 💨</p><p style="margin-top:8px">Too many mistakes this time, but every ghost hunter starts somewhere. Try again, you can do it! 💪</p><p style="margin-top:8px"><b>Score: ⭐ ${score}</b></p></div><button class="btn" onclick="home()">🔄 Restart from the beginning</button>`}
+function over(){clearT();dead();$.innerHTML=`<div class="cage">${boo(5,'gone')}</div><h1>Game Over</h1><div class="card"><p>The candle blew out... Mimi was swept away by the mist. 💨</p><p style="margin-top:8px">Too many mistakes this time, but every ghost hunter starts somewhere. Try again, you can do it! 💪</p><p style="margin-top:8px"><b>Score: ⭐ ${score}</b></p></div><button class="btn" onclick="home()">🔄 Restart from the beginning</button>`}
 function end(){clearT();const r=RANKS.find(r=>score>=r[0])[1],s=score>=24?3:score>=16?2:1;
- $.innerHTML=`<div class="cage">${boo(0)}</div><h1>Boo is FREE!</h1><div class="stars">${'⭐'.repeat(s)}${'☆'.repeat(3-s)}</div>
+ $.innerHTML=`<div class="cage">${boo(0)}</div><h1>Mimi is FREE!</h1><div class="stars">${'⭐'.repeat(s)}${'☆'.repeat(3-s)}</div>
  <div class="card"><h2>${score} / 30 points</h2><p style="margin-top:8px">Your rank: <b style="color:var(--gold)">${r}</b></p><p class="small" style="margin-top:10px">${score>=24?'Amazing! You really know your possessive adjectives!':score>=16?'Great work! Practice a little more to become a Legend!':'Good start, hunter! Try again to collect more stars!'}</p></div>
  <button class="btn" onclick="home()">🔄 Play Again</button>`;good();setTimeout(()=>beep(1040,.3),300)}
 function listen(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR||done)return;const r=new SR();r.lang='en-US';
