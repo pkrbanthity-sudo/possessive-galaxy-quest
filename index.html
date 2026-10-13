@@ -57,7 +57,9 @@ for(let i=0;i<220;i++)st.push({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.ra
 // ===== Sound =====
 let ac;function beep(f,d=.15,t='sine'){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.value=.12;o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
 const good=()=>{beep(660);setTimeout(()=>beep(880,.2),120)},bad=()=>beep(220,.3,'triangle');
-function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
+let VO=null;function pv(){const v=speechSynthesis.getVoices().filter(x=>/^en[-_]US$/i.test(x.lang));VO=v.find(x=>/Samantha|Google US English|Aria|Jenny|Zira|Alex|Natural/i.test(x.name))||v[0]||null}
+try{pv();speechSynthesis.onvoiceschanged=pv}catch(e){}
+function say(t){try{speechSynthesis.cancel();pv();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(VO)u.voice=VO;u.rate=.85;speechSynthesis.speak(u)}catch(e){}}
 // ===== Data =====
 const ALL=['my','your','his','her','its','our','their'];
 const STAGES=[
